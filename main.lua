@@ -7,6 +7,7 @@
 --VARIABLES--
 
 local timeElapsed = os.clock()
+local eventTime = os.clock()
 
 local followers = 0
 local fpc = 1
@@ -18,9 +19,10 @@ local managerFpc = 1000
 local managerLevelUp = 5000000
 local managerOn = false
 local managerNr = 0
-local eventOn = false
+local timeEventOn = false
 
 local stage = 1
+local nrToEvent = 1
 
 
 --IMAGES--
@@ -44,85 +46,28 @@ local stageText = display.newText( string.format("Stage: %.f\n", stage), display
 local levelUpText = display.newText( levelUp, display.contentCenterX, display.contentCenterY *2 -20, native.systemFont, 20 )
 local fpcText = display.newText( fpc, 280, 100, native.systemFont, 20 )
 
---RANDOM EVENTS--
-
---choice events--
-
-local function randomEvent()
-	math.randomseed(os.time())
-	local r = math.random(1,3)
-	
-	eventOn = true
-	
-	if r == 1 then
-		local eventText = display.newText( "how bad did you lose?", display.contentCenterX, display.contentCenterY, native.systemFont, 20 )
-		local eventTextAns1 = display.newText( "bad", display.contentCenterX - 50, display.contentCenterY + 50, native.systemFont, 40 )
-		local eventTextAns2 = display.newText( "baaad", display.contentCenterX + 50, display.contentCenterY + 50, native.systemFont, 40 )
-		local function good()
-			followers = followers - 10
-			if followers < 0 then
-				followers = 0
-			end
-			eventOn = false
-			display.remove(eventText)
-			display.remove(eventTextAns1)
-			display.remove(eventTextAns2)
-		end
-		local function bad()
-			followers = followers - 10
-			if followers < 0 then
-				followers = 0
-			end
-			eventOn = false
-			display.remove(eventText)
-			display.remove(eventTextAns1)
-			display.remove(eventTextAns2)
-		end
-		eventTextAns1:addEventListener( "tap", good )
-		eventTextAns2:addEventListener( "tap", bad )
-	end
-	
-	if r == 2 then
-		local eventText = display.newText( "winner!!!", display.contentCenterX, display.contentCenterY, native.systemFont, 40 )
-		local function good()
-			followers = followers * 1.25
-			eventOn = false
-			display.remove(eventText)
-		end
-		eventText:addEventListener( "tap", good )
-	end
-	
-	if r == 3 then
-		local eventText = display.newText( "loser!!!", display.contentCenterX, display.contentCenterY, native.systemFont, 40 )
-		local function good()
-			followers = followers * 0.8
-			math.floor(followers)
-			eventOn = false
-			display.remove(eventText)
-		end
-		eventText:addEventListener( "tap", good )
-	end
-end
-
---timed events--
-
-
-
 --FOLLOWERS PER CLICK--
 
 local function incrFollowers()
 	--multiplication for how much followers a user should gain per click
 	if followers >= levelUp then
-		fpc = fpc + fpcUp
+		fpc = fpc + fpcUp --when the timed event is on this multiplier will assure the fpc stays the same when levelUp occurs
 		levelUp = levelUp * 2
 		stage = stage + 1
+		nrToEvent = nrToEvent + 1
 		
-		randomEvent()
 	end
 	
-	if eventOn == false then
-		followers = followers + (fpc * cprMultiplier)
+--TIMED EVENT--
+	if nrToEvent >= 5 then
+		eventTime = os.clock()
+		timeEventOn = true
+		nrToEvent = 0
+		fpc = fpc * 2
+		fpcUp = fpcUp * 2
 	end
+	
+	followers = followers + (fpc * cprMultiplier)
 	
 	levelUpText.text = levelUp --text update of next stage. this is temporal, we could have a progress bar for lvl up and just display stage number
 	fpcText.text = fpc * cprMultiplier --this text could be appearing above or next to the character every time the user taps (then disappears) to show how much they've gained
@@ -154,14 +99,22 @@ local function managerUpgrade()
 end
 
 local function init()
-	if os.clock() - timeElapsed > 5 then --time (os.clock()) - time elapsed gives you time in seconds dunno why so... if time (sec) > 5
+	if os.clock() - timeElapsed > 2 then --os clock = current time, time elapsed captures current time so: os clock - time elapsed = 0, 1, 2... so on
 		if managerOn == true then
 			followers = followers + managerFpc
 		end
-		timeElapsed = timeElapsed + 5 --every 5 seconds ^^^ add the 5 seconds gap which essentially resets the clock
+		timeElapsed = timeElapsed + 2 --every 5 seconds ^^^ add the 5 seconds gap which essentially resets the clock
 	end
 	followersText.text = math.floor(followers) --constantly updating the followers amount text, also round down in case of a decimal which can be encountered in event multiplications
-    print(string.format("elapsed time: %.2f\n", os.clock() - timeElapsed)) --just in case i count the time for now
+    print(string.format("elapsed time: %.2f\n", os.clock() - eventTime)) --display counting time at console for testing purposes
+	
+	if timeEventOn == true then
+		if os.clock() - eventTime > 10 then
+			fpc = fpc / 2
+			fpcUp = fpcUp / 2
+			timeEventOn = false
+		end
+	end
 end
 
 --FUNCTION CALLS--
@@ -173,16 +126,16 @@ Runtime:addEventListener("enterFrame", init)
 
 --TO DO LIST--------------------------------------------------------------------------------------------------------------------
 
---COMPLETE
+--COMPLETE--
 
 --tap to get followers ( all calculations included )
 --upgrade computer
 --managers (4 managers)( ( 5mil * 8 etc ) first at 5mil then 40mil then 320mil then 2,560mil ) ( 10,000 every 5/10 sec then * 10 so 100,000 then 1mil then 10 mil )
+--timed event ( new timer, times fpc and fpcUP by 5, after timer is done divide fpc and fpcUP by 5) fpcUP is the amount that is added per click )
 
---INCOMPLETE
+--INCOMPLETE--
 
---choice event ( have multiple questions to ask, answers can be images of yes and no to make it more simple. for example the questions will be picked at random from a selection)
---timed event ( new timer, times fpc and fpcUP by 10, after timer is done divide fpc and fpcUP by 10)
+--choice event ( have multiple questions to ask, answers can be images of yes and no to make it more simple. for example the questions will be picked at random from a selection )
 --news feed
 --upgrade locations and a system to change the graphics
 --graphics
