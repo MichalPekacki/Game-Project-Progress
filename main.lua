@@ -19,12 +19,15 @@ local managerFpc = 1000 --amount of followers a manager adds
 local managerLevelUp = 5000000 --number at which managerFpc is upgraded
 local managerOn = false --determines whether managers are active
 local managerNr = 0 --number of managers required for a limit
-local timeEventOn = false --determines is a timed event is on
+local timeEventOn = false --determines if timed event is on
 
 local stage = 1 --stage count
 local nrToEvent = 1 --counts when timed events should occur
+local nrToChoiceEvent = 1 --count when choice events should occur
 
-local randomNumber --variable storing random number called in functions
+--variables storing random number called in functions
+local randomNumber
+local eventRandomNumber
 
 --IMAGES--
 
@@ -44,12 +47,78 @@ manager.y = 100
 
 local followersText = display.newText( followers, display.contentCenterX, 50, native.systemFont, 40 )
 local stageText = display.newText( string.format("Stage: %.f\n", stage), display.contentCenterX, 20, native.systemFont, 20 )
-local levelUpText = display.newText( levelUp, display.contentCenterX, display.contentCenterY *2 -20, native.systemFont, 20 )
+local levelUpText = display.newText( levelUp, display.contentCenterX, display.actualContentHeight -80, native.systemFont, 20 )
 local fpcText = display.newText( fpc, 280, 100, native.systemFont, 20 )
+
 local newsText = display.newText( "", display.contentCenterX, 230, native.systemFont, 20 )
 newsText.anchorX = 0 --set text anchor point to the far left side of text
+local randomNews = {"hello to the world of follower frenzy", "there is a garden hose in my shoe", "ronald thump becomes president", "canyon south gives out weevies"} --array containing all news text
 
-local randomNews = {"hi", "bye", "ronald thump becomes president", "canyon south gives out weevies"} --array containing all news text
+local eventText = display.newText( "", display.contentCenterX, 280, native.systemFont, 22 )
+local acceptButton = display.newText( "", 80, 320, native.systemFont, 21 )
+local declineButton = display.newText( "", display.actualContentWidth - 80, 320, native.systemFont, 21 )
+local eventAnswer = display.newText( "", display.contentCenterX, 300, native.systemFont, 22 )
+local option1 = {"Invited to a tv show", "Featured in a magazine", "Mentioned by a celebrity"} --array containing all event option 1 text
+local option2 = {"You were the life\nof the party", "You tried to act\ncool but it backfired",
+ "You looked amazing\nand people are interested", "You were caught on\nyour bad day",
+ "They appriciated your\nwork", "They think you will\nnever make it"} --array containing all event option 2 text
+
+--EVENT OPTIONS--
+local function eventOption1()
+	eventRandomNumber = math.random (1, 3)
+	eventText.text = option1[eventRandomNumber]
+	acceptButton.text = "accept"
+	declineButton.text = "decline"
+end
+
+local function eventOption2()
+	eventText.text = ""
+	acceptButton.text = ""
+	declineButton.text = ""
+	
+	if eventRandomNumber == 1 then
+		eventRandomNumber = math.random (1, 2)
+		eventAnswer.text = option2[eventRandomNumber]
+		if eventRandomNumber == 1 then
+			followers = followers * 1.3
+		end
+		if eventRandomNumber == 2 then
+			followers = followers * 0.8
+		end
+		return true
+	end
+	
+	if eventRandomNumber == 2 then
+		eventRandomNumber = math.random (3, 4)
+		eventAnswer.text = option2[eventRandomNumber]
+		if eventRandomNumber == 3 then
+			followers = followers * 1.1
+		end
+		if eventRandomNumber == 4 then
+			followers = followers * 0.9
+		end
+		return true
+	end
+	
+	if eventRandomNumber == 3 then
+		eventRandomNumber = math.random (5, 6)
+		eventAnswer.text = option2[eventRandomNumber]
+		if eventRandomNumber == 5 then
+			followers = followers * 1.2
+		end
+		if eventRandomNumber == 6 then
+			followers = followers * 0.9
+		end
+		return true
+	end
+end
+
+local function eventFinished()
+	eventText.text = ""
+	acceptButton.text = ""
+	declineButton.text = ""
+	eventAnswer.text = ""
+end
 
 --FOLLOWERS PER CLICK--
 
@@ -60,7 +129,7 @@ local function incrFollowers()
 		levelUp = levelUp * 2
 		stage = stage + 1
 		nrToEvent = nrToEvent + 1
-		
+		nrToChoiceEvent = nrToChoiceEvent + 1
 	end
 	
 --TIMED EVENT--
@@ -72,6 +141,13 @@ local function incrFollowers()
 		fpcUp = fpcUp * 2
 	end
 	
+--CHOICE EVENT--
+	if nrToChoiceEvent >= 3 then
+		eventOption1()
+		nrToChoiceEvent = 0
+	end
+	
+	print(string.format("rarndom number: %.2f\n", eventRandomNumber))
 	followers = followers + (fpc * cprMultiplier) --multiplication for how much followers a user should gain per click
 	
 	levelUpText.text = levelUp --text update of next stage. this is temporal, we could have a progress bar for lvl up and just display stage number
@@ -134,6 +210,10 @@ end
 
 --FUNCTION CALLS--
 
+acceptButton:addEventListener( "tap", eventOption2 )
+declineButton:addEventListener( "tap", eventFinished )
+eventAnswer:addEventListener( "tap", eventFinished )
+
 background:addEventListener( "tap", incrFollowers )
 computer:addEventListener( "tap", cprUpgrade)
 manager:addEventListener( "tap", managerUpgrade)
@@ -147,16 +227,13 @@ Runtime:addEventListener("enterFrame", init)
 --upgrade computer
 --managers(4 managers)( ( 5mil * 8 etc ) first at 5mil then 40mil then 320mil then 2,560mil ) ( 10,000 every 5/10 sec then * 10 so 100,000 then 1mil then 10 mil )
 --timed event ( new timer, times fpc and fpcUP by 2, after timer is done divide fpc and fpcUP by 2) fpcUP is the amount that is added per click )
+--news feed ( appear constantly, world related )
+--choice event ( accept / decline )
 
 --IN PROGRESS--
 
---news feed ( 2 types )( arrays store strings, read random string/ read next string )
---( random: appear every stage, world related ) ////////////////////////////////////////////////////////////////////complete
---( ordered: stage count eg. every 5, user related )
-
 --INCOMPLETE--
 
---choice event ( have multiple questions to ask, answers can be images of yes and no to make it more simple. for example the questions will be picked at random from a selection )
---upgrade locations and a system to change the graphics
+--upgrade locations and a system to change the graphics ( done at lvl up )
 --graphics
 --customize
