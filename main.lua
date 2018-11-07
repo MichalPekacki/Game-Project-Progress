@@ -9,25 +9,26 @@
 local timeElapsed = os.clock()
 local eventTime = os.clock()
 
-local followers = 0
-local fpc = 1
-local fpcUp = 1
-local levelUp = 50
-local cprMultiplier = 1
-local cprLevelUp = 200
-local managerFpc = 1000
-local managerLevelUp = 5000000
-local managerOn = false
-local managerNr = 0
-local timeEventOn = false
+local followers = 0 --current followers
+local fpc = 1 --how many followers are added every tap
+local fpcUp = 1 --addded to fpc when entered next stage
+local levelUp = 50 --amount at which user enters next stage
+local cprMultiplier = 1 --a number fpc is multiplied by
+local cprLevelUp = 200 --number at which cprMultipier is upgraded
+local managerFpc = 1000 --amount of followers a manager adds
+local managerLevelUp = 5000000 --number at which managerFpc is upgraded
+local managerOn = false --determines whether managers are active
+local managerNr = 0 --number of managers required for a limit
+local timeEventOn = false --determines is a timed event is on
 
-local stage = 1
-local nrToEvent = 1
+local stage = 1 --stage count
+local nrToEvent = 1 --counts when timed events should occur
 
+local randomNumber --variable storing random number called in functions
 
 --IMAGES--
 
-local background = display.newImageRect( "background.jpg", display.contentCenterX * 2, display.contentCenterY * 2 )
+local background = display.newImageRect( "background.jpg", display.actualContentWidth, display.actualContentHeight )
 background.x = display.contentCenterX
 background.y = display.contentCenterY
 
@@ -45,11 +46,15 @@ local followersText = display.newText( followers, display.contentCenterX, 50, na
 local stageText = display.newText( string.format("Stage: %.f\n", stage), display.contentCenterX, 20, native.systemFont, 20 )
 local levelUpText = display.newText( levelUp, display.contentCenterX, display.contentCenterY *2 -20, native.systemFont, 20 )
 local fpcText = display.newText( fpc, 280, 100, native.systemFont, 20 )
+local newsText = display.newText( "", display.contentCenterX, 230, native.systemFont, 20 )
+newsText.anchorX = 0 --set text anchor point to the far left side of text
+
+local randomNews = {"hi", "bye", "ronald thump becomes president", "canyon south gives out weevies"} --array containing all news text
 
 --FOLLOWERS PER CLICK--
 
 local function incrFollowers()
-	--multiplication for how much followers a user should gain per click
+	--next stage upgrades and other multiplications
 	if followers >= levelUp then
 		fpc = fpc + fpcUp --when the timed event is on this multiplier will assure the fpc stays the same when levelUp occurs
 		levelUp = levelUp * 2
@@ -67,7 +72,7 @@ local function incrFollowers()
 		fpcUp = fpcUp * 2
 	end
 	
-	followers = followers + (fpc * cprMultiplier)
+	followers = followers + (fpc * cprMultiplier) --multiplication for how much followers a user should gain per click
 	
 	levelUpText.text = levelUp --text update of next stage. this is temporal, we could have a progress bar for lvl up and just display stage number
 	fpcText.text = fpc * cprMultiplier --this text could be appearing above or next to the character every time the user taps (then disappears) to show how much they've gained
@@ -85,11 +90,11 @@ end
 
 --MANAGERS--
 
---what can be done is add a graphic when unlocked
---if the graphic is a number and not called here we could have multiple graphics for when the manager is upgraded and increment the graphic number
+--also add grahpic when 
 local function managerUpgrade()
 	if managerNr < 4 then
 		if followers >= managerLevelUp then
+			timeElapsed = os.clock()
 			managerFpc = managerFpc * 10
 			managerLevelUp = managerLevelUp * 8
 			managerNr = managerNr + 1 --max number of managers is 4 in this case
@@ -99,21 +104,31 @@ local function managerUpgrade()
 end
 
 local function init()
-	if os.clock() - timeElapsed > 2 then --os clock = current time, time elapsed captures current time so: os clock - time elapsed = 0, 1, 2... so on
-		if managerOn == true then
+--MANAGERS CLOCK--
+	if managerOn == true then
+		if os.clock() - timeElapsed > 2 then --os clock = current time, time elapsed captures current time so: os clock - time elapsed = 0, 1, 2... so on
 			followers = followers + managerFpc
+			timeElapsed = timeElapsed + 2 --every 2 seconds ^^^ add the 2 seconds gap which essentially resets the clock
 		end
-		timeElapsed = timeElapsed + 2 --every 5 seconds ^^^ add the 5 seconds gap which essentially resets the clock
 	end
-	followersText.text = math.floor(followers) --constantly updating the followers amount text, also round down in case of a decimal which can be encountered in event multiplications
-    print(string.format("elapsed time: %.2f\n", os.clock() - eventTime)) --display counting time at console for testing purposes
-	
+	followersText.text = math.floor(followers) --constantly updating the followers amount text, also round down in case of a decimal
+    --print(string.format("elapsed time: %.2f\n", os.clock() - eventTime)) --display counting time at console for testing purposes
+
+--TIMED EVENT CLOCK--
 	if timeEventOn == true then
 		if os.clock() - eventTime > 10 then
 			fpc = fpc / 2
 			fpcUp = fpcUp / 2
 			timeEventOn = false
 		end
+	end
+	
+--NEWS MOVEMENT AND UPDATE--
+	newsText.x = newsText.x - 0.5 --move text to the left. speed depends on frames but does not affect gameplay
+	if ( newsText.x + newsText.width ) <= 0 then --left side + the width of text = right side
+		randomNumber = math.random (1, 4) --pick random news text from the array specified earlier
+		newsText.text = randomNews[randomNumber] --update text
+		newsText.x = display.actualContentWidth --reset text position on the right side of screen
 	end
 end
 
@@ -130,16 +145,18 @@ Runtime:addEventListener("enterFrame", init)
 
 --tap to get followers ( all calculations included )
 --upgrade computer
---managers (4 managers)( ( 5mil * 8 etc ) first at 5mil then 40mil then 320mil then 2,560mil ) ( 10,000 every 5/10 sec then * 10 so 100,000 then 1mil then 10 mil )
---timed event ( new timer, times fpc and fpcUP by 5, after timer is done divide fpc and fpcUP by 5) fpcUP is the amount that is added per click )
+--managers(4 managers)( ( 5mil * 8 etc ) first at 5mil then 40mil then 320mil then 2,560mil ) ( 10,000 every 5/10 sec then * 10 so 100,000 then 1mil then 10 mil )
+--timed event ( new timer, times fpc and fpcUP by 2, after timer is done divide fpc and fpcUP by 2) fpcUP is the amount that is added per click )
+
+--IN PROGRESS--
+
+--news feed ( 2 types )( arrays store strings, read random string/ read next string )
+--( random: appear every stage, world related ) ////////////////////////////////////////////////////////////////////complete
+--( ordered: stage count eg. every 5, user related )
 
 --INCOMPLETE--
 
 --choice event ( have multiple questions to ask, answers can be images of yes and no to make it more simple. for example the questions will be picked at random from a selection )
---news feed
 --upgrade locations and a system to change the graphics
 --graphics
 --customize
-
---taps per second score idea?
---(for 1 sec tap = t + 1. after 1 sec reset, if t > hs (highest score) then hs = t)
