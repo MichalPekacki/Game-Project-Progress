@@ -147,7 +147,6 @@ local function incrFollowers()
 		nrToChoiceEvent = 0
 	end
 	
-	print(string.format("rarndom number: %.2f\n", eventRandomNumber))
 	followers = followers + (fpc * cprMultiplier) --multiplication for how much followers a user should gain per click
 	
 	levelUpText.text = levelUp --text update of next stage. this is temporal, we could have a progress bar for lvl up and just display stage number
